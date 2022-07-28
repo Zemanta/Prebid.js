@@ -3,6 +3,7 @@ import {spec} from 'modules/outbrainBidAdapter.js';
 import {config} from 'src/config.js';
 import {server} from 'test/mocks/xhr';
 import { createEidsArray } from 'modules/userId/eids.js';
+import common from 'mocha/lib/interfaces/common';
 
 describe('Outbrain Adapter', function () {
   describe('Bid request and response', function () {
@@ -230,6 +231,13 @@ describe('Outbrain Adapter', function () {
           cur: [
             'USD'
           ],
+          ext: {
+            prebid: {
+              channel: {
+                name: 'pbjs', version: '$prebid.version$'
+              }
+            }
+          },
           imp: [
             {
               id: '1',
@@ -237,16 +245,9 @@ describe('Outbrain Adapter', function () {
                 request: JSON.stringify(expectedNativeAssets)
               }
             }
-          ],
-          ext: {
-            prebid: {
-              channel: {
-                name: 'pbjs', version: '$prebid.version$'
-              }
-            }
-          }
+          ]
         }
-        const res = spec.buildRequests([bidRequest], commonBidderRequest)
+        const res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
         expect(res.url).to.equal('https://bidder-url.com')
         expect(res.data).to.deep.equal(JSON.stringify(expectedData))
       });
@@ -272,6 +273,13 @@ describe('Outbrain Adapter', function () {
           cur: [
             'USD'
           ],
+          ext: {
+            prebid: {
+              channel: {
+                name: 'pbjs', version: '$prebid.version$'
+              }
+            }
+          },
           imp: [
             {
               id: '1',
@@ -284,6 +292,40 @@ describe('Outbrain Adapter', function () {
                 ]
               }
             }
+          ]
+        }
+        const res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
+        expect(res.url).to.equal('https://bidder-url.com')
+        expect(res.data).to.deep.equal(JSON.stringify(expectedData))
+      })
+
+      it('should build native AND display requests', function () {
+        const nativeBidRequest = {
+          ...commonBidRequest,
+          ...nativeBidRequestParams,
+        }
+        const displayBidRequest = {
+          ...commonBidRequest,
+          ...displayBidRequestParams,
+        }
+        const res = spec.buildRequests([nativeBidRequest, displayBidRequest], commonBidderRequest)
+        const nativeRequest = res[0]
+        const displayRequest = res[1]
+        const nativeExpectedData = {
+          site: {
+            page: 'https://example.com/',
+            publisher: {
+              id: 'publisher-id'
+            }
+          },
+          device: {
+            ua: navigator.userAgent
+          },
+          source: {
+            fd: 1
+          },
+          cur: [
+            'USD'
           ],
           ext: {
             prebid: {
@@ -291,11 +333,81 @@ describe('Outbrain Adapter', function () {
                 name: 'pbjs', version: '$prebid.version$'
               }
             }
-          }
+          },
+          imp: [
+            {
+              id: '1',
+              native: {
+                request: JSON.stringify({
+                  assets: [
+                    {
+                      required: 1,
+                      id: 3,
+                      img: {
+                        type: 3,
+                        w: 120,
+                        h: 100
+                      }
+                    },
+                    {
+                      required: 1,
+                      id: 0,
+                      title: {}
+                    },
+                    {
+                      required: 0,
+                      id: 5,
+                      data: {
+                        type: 1
+                      }
+                    }
+                  ]
+                })
+              }
+            }
+          ]
+        };
+        expect(nativeRequest.url).to.equal('https://bidder-url.com')
+        expect(nativeRequest.data).to.deep.equal(JSON.stringify(nativeExpectedData))
+        const displayExpectedData = {
+          site: {
+            page: 'https://example.com/',
+            publisher: {
+              id: 'publisher-id'
+            }
+          },
+          device: {
+            ua: navigator.userAgent
+          },
+          source: {
+            fd: 1
+          },
+          cur: [
+            'USD'
+          ],
+          ext: {
+            prebid: {
+              channel: {
+                name: 'pbjs', version: '$prebid.version$'
+              }
+            }
+          },
+          imp: [
+            {
+              id: '2',
+              banner: {
+                format: [
+                  {
+                    w: 300,
+                    h: 250
+                  }
+                ]
+              }
+            }
+          ]
         }
-        const res = spec.buildRequests([bidRequest], commonBidderRequest)
-        expect(res.url).to.equal('https://bidder-url.com')
-        expect(res.data).to.deep.equal(JSON.stringify(expectedData))
+        expect(displayRequest.url).to.equal('https://bidder-url.com')
+        expect(displayRequest.data).to.deep.equal(JSON.stringify(displayExpectedData))
       })
 
       it('should pass optional parameters in request', function () {
@@ -309,7 +421,7 @@ describe('Outbrain Adapter', function () {
         bidRequest.params.bcat = ['bad-category']
         bidRequest.params.badv = ['bad-advertiser']
 
-        const res = spec.buildRequests([bidRequest], commonBidderRequest)
+        const res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
         const resData = JSON.parse(res.data)
         expect(resData.imp[0].tagid).to.equal('test-tag')
         expect(resData.site.publisher.name).to.equal('test-publisher')
@@ -327,7 +439,7 @@ describe('Outbrain Adapter', function () {
           ...commonBidderRequest,
           timeout: 500
         }
-        const res = spec.buildRequests([bidRequest], bidderRequest)
+        const res = spec.buildRequests([bidRequest], bidderRequest)[0]
         const resData = JSON.parse(res.data)
         expect(resData.tmax).to.equal(500)
       });
@@ -344,7 +456,7 @@ describe('Outbrain Adapter', function () {
             consentString: 'consentString',
           }
         }
-        const res = spec.buildRequests([bidRequest], bidderRequest)
+        const res = spec.buildRequests([bidRequest], bidderRequest)[0]
         const resData = JSON.parse(res.data)
         expect(resData.user.ext.consent).to.equal('consentString')
         expect(resData.regs.ext.gdpr).to.equal(1)
@@ -359,7 +471,7 @@ describe('Outbrain Adapter', function () {
           ...commonBidderRequest,
           uspConsent: 'consentString'
         }
-        const res = spec.buildRequests([bidRequest], bidderRequest)
+        const res = spec.buildRequests([bidRequest], bidderRequest)[0]
         const resData = JSON.parse(res.data)
         expect(resData.regs.ext.us_privacy).to.equal('consentString')
       });
@@ -371,7 +483,7 @@ describe('Outbrain Adapter', function () {
         }
         config.setConfig({coppa: true})
 
-        const res = spec.buildRequests([bidRequest], commonBidderRequest)
+        const res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
         const resData = JSON.parse(res.data)
         expect(resData.regs.coppa).to.equal(1)
 
@@ -388,7 +500,7 @@ describe('Outbrain Adapter', function () {
           ...commonBidRequest,
         };
 
-        let res = spec.buildRequests([bidRequest], commonBidderRequest);
+        let res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
         const resData = JSON.parse(res.data)
         expect(resData.user.ext.eids).to.deep.equal([
           {source: 'liveramp.com', uids: [{id: 'id-value', atype: 3}]}
@@ -407,7 +519,7 @@ describe('Outbrain Adapter', function () {
           }
         }
 
-        const res = spec.buildRequests([bidRequest], commonBidderRequest)
+        const res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
         const resData = JSON.parse(res.data)
         expect(resData.imp[0].bidfloor).to.equal(1.23)
       });
@@ -447,9 +559,9 @@ describe('Outbrain Adapter', function () {
           ]
         }
 
-        let res = spec.buildRequests([bidRequest], commonBidderRequest);
+        let res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
         const resData = JSON.parse(res.data)
-        expect(resData.imp[0].native.request).to.equal(JSON.stringify(expectedNativeAssets));
+        expect(resData.imp[0].native.request).to.equal(JSON.stringify(expectedNativeAssets))
       });
     })
 

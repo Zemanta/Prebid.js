@@ -64,7 +64,7 @@ export const spec = {
     const endpointUrl = config.getConfig('outbrain.bidderUrl');
     const timeout = bidderRequest.timeout;
 
-    const imps = validBidRequests.map((bid, id) => {
+    const [ nativeImps, displayImps ] = validBidRequests.reduce((prev, bid, id) => {
       bid.netRevenue = 'net';
       const imp = {
         id: id + 1 + ''
@@ -74,18 +74,6 @@ export const spec = {
         imp.tagid = bid.params.tagid
       }
 
-      if (bid.nativeParams) {
-        imp.native = {
-          request: JSON.stringify({
-            assets: getNativeAssets(bid)
-          })
-        }
-      } else {
-        imp.banner = {
-          format: transformSizes(bid.sizes)
-        }
-      }
-
       if (typeof bid.getFloor === 'function') {
         const floor = _getFloor(bid, bid.nativeParams ? NATIVE : BANNER);
         if (floor) {
@@ -93,8 +81,22 @@ export const spec = {
         }
       }
 
-      return imp;
-    });
+      if (bid.nativeParams) {
+        imp.native = {
+          request: JSON.stringify({
+            assets: getNativeAssets(bid)
+          })
+        }
+        prev[0].push(imp);
+      } else {
+        imp.banner = {
+          format: transformSizes(bid.sizes)
+        }
+        prev[1].push(imp);
+      }
+
+      return prev;
+    }, [[], []]);
 
     const request = {
       id: bidderRequest.auctionId,
@@ -103,7 +105,6 @@ export const spec = {
       source: { fd: 1 },
       cur: [cur],
       tmax: timeout,
-      imp: imps,
       bcat: bcat,
       badv: badv,
       ext: {
@@ -136,12 +137,25 @@ export const spec = {
       deepSetValue(request, 'user.ext.eids', eids);
     }
 
-    return {
-      method: 'POST',
-      url: endpointUrl,
-      data: JSON.stringify(request),
-      bids: validBidRequests
-    };
+    const requests = [];
+    if (nativeImps.length > 0) {
+      requests.push({
+        method: 'POST',
+        url: endpointUrl,
+        data: JSON.stringify(Object.assign(request, {'imp': nativeImps})),
+        bids: nativeImps
+      })
+    }
+    if (displayImps.length > 0) {
+      requests.push({
+        method: 'POST',
+        url: endpointUrl,
+        data: JSON.stringify(Object.assign(request, {'imp': displayImps})),
+        bids: displayImps
+      })
+    }
+
+    return requests;
   },
   interpretResponse: (serverResponse, { bids }) => {
     if (!serverResponse.body) {
