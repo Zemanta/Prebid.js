@@ -3,7 +3,6 @@ import {spec} from 'modules/outbrainBidAdapter.js';
 import {config} from 'src/config.js';
 import {server} from 'test/mocks/xhr';
 import { createEidsArray } from 'modules/userId/eids.js';
-import common from 'mocha/lib/interfaces/common';
 
 describe('Outbrain Adapter', function () {
   describe('Bid request and response', function () {
