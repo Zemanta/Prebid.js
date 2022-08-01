@@ -246,9 +246,41 @@ describe('Outbrain Adapter', function () {
             }
           ]
         }
+        const expectedBids = [
+          {
+            auctionId: '12043683-3254-4f74-8934-f941b085579e',
+            bidId: '2d6815a92ba1ba',
+            bidder: 'outbrain',
+            nativeParams: {
+              image: {
+                required: true,
+                sendId: true,
+                sizes: [
+                  120,
+                  100
+                ]
+              },
+              sponsoredBy: {
+                required: false
+              },
+              title: {
+                required: true,
+                sendId: true
+              }
+            },
+            netRevenue: 'net',
+            params: {
+              publisher: {
+                'id': 'publisher-id'
+              }
+            }
+          }
+        ]
+
         const res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
         expect(res.url).to.equal('https://bidder-url.com')
         expect(res.data).to.deep.equal(JSON.stringify(expectedData))
+        expect(res.bids).to.deep.equal(expectedBids)
       });
 
       it('should build display request', function () {
@@ -293,9 +325,30 @@ describe('Outbrain Adapter', function () {
             }
           ]
         }
+        const expectedBids = [
+          {
+            auctionId: '12043683-3254-4f74-8934-f941b085579e',
+            bidId: '2d6815a92ba1ba',
+            bidder: 'outbrain',
+            netRevenue: 'net',
+            params: {
+              publisher: {
+                id: 'publisher-id'
+              }
+            },
+            sizes: [
+              [
+                300,
+                250
+              ]
+            ]
+          }
+        ]
+
         const res = spec.buildRequests([bidRequest], commonBidderRequest)[0]
         expect(res.url).to.equal('https://bidder-url.com')
         expect(res.data).to.deep.equal(JSON.stringify(expectedData))
+        expect(res.bids).to.deep.equal(expectedBids)
       })
 
       it('should build native AND display requests', function () {
@@ -366,8 +419,39 @@ describe('Outbrain Adapter', function () {
             }
           ]
         };
+        const nativeExpectedBids = [
+          {
+            auctionId: '12043683-3254-4f74-8934-f941b085579e',
+            bidId: '2d6815a92ba1ba',
+            bidder: 'outbrain',
+            nativeParams: {
+              image: {
+                required: true,
+                sendId: true,
+                sizes: [
+                  120,
+                  100
+                ]
+              },
+              sponsoredBy: {
+                required: false
+              },
+              title: {
+                required: true,
+                sendId: true
+              }
+            },
+            netRevenue: 'net',
+            params: {
+              publisher: {
+                'id': 'publisher-id'
+              }
+            }
+          }
+        ]
         expect(nativeRequest.url).to.equal('https://bidder-url.com')
         expect(nativeRequest.data).to.deep.equal(JSON.stringify(nativeExpectedData))
+        expect(nativeRequest.bids).to.deep.equal(nativeExpectedBids)
         const displayExpectedData = {
           site: {
             page: 'https://example.com/',
@@ -405,8 +489,28 @@ describe('Outbrain Adapter', function () {
             }
           ]
         }
+        const displayExpectedBids = [
+          {
+            auctionId: '12043683-3254-4f74-8934-f941b085579e',
+            bidId: '2d6815a92ba1ba',
+            bidder: 'outbrain',
+            netRevenue: 'net',
+            params: {
+              publisher: {
+                id: 'publisher-id'
+              }
+            },
+            sizes: [
+              [
+                300,
+                250
+              ]
+            ]
+          }
+        ]
         expect(displayRequest.url).to.equal('https://bidder-url.com')
         expect(displayRequest.data).to.deep.equal(JSON.stringify(displayExpectedData))
+        expect(displayRequest.bids).to.deep.equal(displayExpectedBids)
       })
 
       it('should pass optional parameters in request', function () {

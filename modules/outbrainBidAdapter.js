@@ -143,7 +143,7 @@ export const spec = {
         method: 'POST',
         url: endpointUrl,
         data: JSON.stringify(Object.assign(request, {'imp': nativeImps})),
-        bids: nativeImps
+        bids: validBidRequests.filter(item => item.nativeParams != null)
       })
     }
     if (displayImps.length > 0) {
@@ -151,7 +151,7 @@ export const spec = {
         method: 'POST',
         url: endpointUrl,
         data: JSON.stringify(Object.assign(request, {'imp': displayImps})),
-        bids: displayImps
+        bids: validBidRequests.filter(item => item.nativeParams == null)
       })
     }
 
